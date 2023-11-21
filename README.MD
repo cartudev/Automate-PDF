@@ -24,7 +24,7 @@ Note: In future updates, Auto-PDF aims to provide an option for obtaining inform
 3. Run the Auto-PDF parser:
 
 ```bash
-node auto-pdf.js
+node automate-pdf.js
 ```
 
 4. Auto-PDF will process the PDF files and generate data objects based on your templates. The results will be saved in the `output` directory.
