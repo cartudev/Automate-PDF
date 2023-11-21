@@ -37,8 +37,10 @@ module.exports = function(str) {
   function datosFacturados(str) {
     let object = str.match(/(((?<=IVA.)\d+\.?\d?(?=\%))|(Importe.\w+))|((?<=\$)\d+\,?\d+)/g)
     let obj = {
-        'Importe Neto': str.match(/(?<=Detalle de impuestosMonto BaseAlic\.Monto ImpuestoDetalle de impuestosMonto BaseAlic\.Monto Impuesto\nIVA. +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.'),
-        'Importe Total': str.match(/(?<=TOTAL A PAGAR\$ +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.')
+        'montoIva1':str.match(/(?<=Detalle de impuestosMonto BaseAlic\.Monto ImpuestoDetalle de impuestosMonto BaseAlic\.Monto Impuesto\nIVA. +(\d+\,\d{2}|\d+.\d+\,\d{2}) +\d+\,\d+.+%. +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.'),
+        'tipoIva1':'21',
+        'importeNeto': str.match(/(?<=Detalle de impuestosMonto BaseAlic\.Monto ImpuestoDetalle de impuestosMonto BaseAlic\.Monto Impuesto\nIVA. +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.'),
+        'importeTotal': str.match(/(?<=TOTAL A PAGAR\$ +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.')
     }
     obj[str.match(/(?<=Detalle de impuestosMonto BaseAlic\.Monto ImpuestoDetalle de impuestosMonto BaseAlic\.Monto Impuesto\nIVA. +(\d+\,\d{2}|\d+.\d+\,\d{2}) +)\d+\,\d+/)[0]] = str.match(/(?<=Detalle de impuestosMonto BaseAlic\.Monto ImpuestoDetalle de impuestosMonto BaseAlic\.Monto Impuesto\nIVA. +(\d+\,\d{2}|\d+.\d+\,\d{2}) +\d+\,\d+.+%. +)(\d+\,\d{2}|\d+.\d+\,\d{2})/)[0].replaceAll('.', '').replaceAll(',', '.')
     return obj

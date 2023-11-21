@@ -19,7 +19,7 @@ module.exports = function(str) {
   }
   
   function fechaFactura(str) {
-    return str.match(/(?=.+\n.+\nFecha de emisión\:)\d{2}\/\d{2}\/\d{4}/)[0]
+    return str.match(/(?=.+\n.+\nFecha de emisión\:)\d{2}\/\d{2}\/\d{4}/)[0].replaceAll('/', '')
   }
   
   function numeroCae(str) {
@@ -27,16 +27,16 @@ module.exports = function(str) {
   }
   
   function fechaCae(str) {
-    return str.match(/(?<=C\.A\.E\.\: \d+\nFecha de vencimiento\.\: )\d{2}\/\d{2}\/\d{4}/)[0]
+    return str.match(/(?<=C\.A\.E\.\: \d+\nFecha de vencimiento\.\: )\d{2}\/\d{2}\/\d{4}/)[0].replaceAll('/', '')
   }
   
   function datosFacturados(str) {
     let object = str.match(/(((?<=IVA.)\d+\.?\d?(?=\%))|(Importe.\w+))|((?<=\$)\d+\,?\d+)/g)
     let obj = {
         'Abono': str.match(/(?<=Abono)\d+.\d{2}/)[0],
-        'Tasas Municipales': str.match(/(?<=Tasas Municipales)\d+.\d{2}/)[0],
-        'Importe Neto': str.match(/(?<=Importe Neto U\$S)(\d+\.\d{2}|\d+\,\d+\.\d{2})/)[0].replaceAll(',', ''),
-        'Importe Total': str.match(/(?<=TOTAL\n.+\n.+\n.+\n.+\nU\$S)\d+\.\d{2}/)[0]
+        'tasasMunicipales': str.match(/(?<=Tasas Municipales)\d+.\d{2}/)[0],
+        'importeNeto': str.match(/(?<=Importe Neto U\$S)(\d+\.\d{2}|\d+\,\d+\.\d{2})/)[0].replaceAll(',', ''),
+        'importeTotal': str.match(/(?<=TOTAL\n.+\n.+\n.+\n.+\nU\$S)\d+\.\d{2}/)[0]
     }
     obj[str.match(/(?<=IVA\s+\()\d+/)[0]] = str.match(/(?<=IVA\s+\(\d+\%\))\d+\.\d{2}/)[0]
     return obj

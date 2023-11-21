@@ -1,9 +1,13 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const pdf = require('pdf-parse');
 const readlineSync = require('readline-sync');
-const carpetaPDFs = './carpeta_origen';
-const carpetaDestino = './carpeta_destino';
+const sikuli = require('./module_sikuli/sikuli')
+const carpetaPDFs = './input';
+const carpetaDestino = './output';
 const archivosPDF = fs.readdirSync(carpetaPDFs);
+const notifier = require('node-notifier');
+
+
 
 
  
@@ -19,7 +23,8 @@ class PDFParser {
             claroInternet: "Telmex Argentina S.A.", //CLARO
             ipLan: "NSS S.A.", //IPLAN
             perezDaniel: "PEREZ DANIEL ALBERTO", 
-            romeroNicolas: "ROMERO NICOLAS"
+            romeroNicolas: "ROMERO NICOLAS",
+            ejemplo: "COOPERATIVA DE TRABAJO OTRA"
         }
 
         for (const tipo in objRS) {
@@ -50,6 +55,9 @@ class PDFParser {
         }
         else if (this.pdfType === 'ipLan') {
           return require('./templates/ipLan')(this.str);
+        }
+        else if (this.pdfType === 'ejemplo') {
+          return require('./templates/ejemplo')(this.str);
         }
          else {
             throw new Error('Tipo de PDF no válido');
@@ -90,6 +98,8 @@ pdf(dataBuffer)
       // El archivo fue parseado exitosamente
       console.log('Archivo parseado exitosamente.');
       
+      fs.ensureDirSync(carpetaDestino);
+
       // Mover el archivo al directorio de destino
       fs.renameSync(rutaArchivoOrigen, rutaArchivoDestino);
       console.log('Archivo movido a la carpeta de destino.');
@@ -104,8 +114,12 @@ pdf(dataBuffer)
 
 // Iterar sobre cada archivo en la carpeta de forma asincrónica
 (async () => {
+  let contadorArchivos = 0;
+  fs.removeSync('./module_sikuli/scripts/');
+
   for (const archivo of archivosPDF) {
     if (archivo.toLowerCase().endsWith('.pdf')) {
+      contadorArchivos++;
       const rutaArchivoOrigen = `${carpetaPDFs}/${archivo}`;
       const rutaArchivoDestino = `${carpetaDestino}/${archivo}`;
 
@@ -113,16 +127,25 @@ pdf(dataBuffer)
         const parsedData = await analizarPDF(rutaArchivoOrigen, rutaArchivoDestino);
         const pdfParser = new PDFParser(parsedData);
         const ObjGenerated = pdfParser.parsePDF();
-        console.log(ObjGenerated)
+        
+        const variables = sikuli.variables(ObjGenerated, contadorArchivos)
+        await sikuli.generateModel(variables, contadorArchivos)
     // Realiza acciones con parsedData
       } catch (error) {
         console.error(error);
       }
 
-      // Esperar una tecla para continuar con el siguiente archivo
-      readlineSync.question('Presiona Enter para continuar con el siguiente archivo...');
     }
   }
+  // Esperar una tecla para continuar con el siguiente archivo
+  readlineSync.question('ahora continuara con el modulo de sikuli');
+  const eject = await sikuli.ejecutarSikuliXConScripts()
 
   console.log('Proceso completado.');
+
+  notifier.notify({
+    title: 'Proceso completado',
+    message: '¡El proceso ha terminado con éxito!',
+  })
+  fs.removeSync('./module_sikuli/scripts/');
 })(); 

@@ -6,6 +6,7 @@ function commonAfip(str) {
       numeroCae: numeroCae(str),
       fechaCae: fechaCae(str),
       datosFacturados: datosFacturados(str),
+      descripcionCuenta: descripcionCuenta()
     };
   }
   
@@ -18,7 +19,7 @@ function commonAfip(str) {
   }
   
   function fechaFactura(str) {
-    return str.match(/^((\d\d)\/(\d\d)\/(\d\d\d\d))$/m)[0];
+    return str.match(/^((\d\d)\/(\d\d)\/(\d\d\d\d))$/m)[0].replaceAll('/', '')
   }
   
   function numeroCae(str) {
@@ -26,19 +27,36 @@ function commonAfip(str) {
   }
   
   function fechaCae(str) {
-    return str.match(/(?<=Fecha de Vto\. de CAE\:\n.+\n.+\n)\d{2}\/\d{2}\/\d{4}/)[0];
+    return str.match(/(?<=Fecha de Vto\. de CAE\:\n.+\n.+\n)\d{2}\/\d{2}\/\d{4}/)[0].replaceAll('/', '')
   }
   
   function datosFacturados(str) {
     const object = str.match(/(((?<=IVA.)\d+\.?\d?(?=\%))|(Importe.\w+))|((?<=\$)\d+\,?\d+)/g);
     const obj = {};
+    let arr = []
     for (let i = 0; object.length > i; i++) {
       if (i % 2 === 0 && object[i + 1] !== '0,00') {
-        obj[object[i]] = object[i + 1].replaceAll(',', '.');
+
+        obj['$'+object[i]] = object[i + 1].replaceAll(',', '.');
       }
     }
-    return obj;
+    for (var key in obj){
+      let newKey = key.match(/(?<=\$).+/)[0]
+      arr.push(newKey);
+      arr.push(obj[key])
+    }
+    obj2 = {
+      'montoIva1' : arr[3],
+      'tipoIva1' : arr[2],
+      'importeNeto' : arr[1],
+      'importeTotal' : arr[5],
+    }
+    return obj2;
   }
+
+  function descripcionCuenta(){
+    return "PROVEEDOR"
+  }  
   
   module.exports = commonAfip;
   
