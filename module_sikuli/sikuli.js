@@ -1,10 +1,9 @@
 const { exec } = require('child_process');
 const fs = require('fs-extra');
 const path = require('path');
-const download = require('download');
 const archiver = require('archiver');
-const keypress = require('keypress');
 const readline = require('readline');
+const fetch = require('node-fetch');
 
 
 
@@ -188,81 +187,107 @@ async function fsedit(file, str){
 // Función principal para ejecutar SikuliX con múltiples scripts
 async function ejecutarSikuliXConScripts() {
   // Comprobar y descargar el archivo JAR antes de continuar
-  await descargarSikuliJar();
+  const hereWait = await descargarSikuliJar()
+  console.log('Continuando con el código después de la descarga de SikuliX JAR...');
 
-    // Obtener la lista de archivos en el directorio de scripts
-    const listaDeScripts = obtenerScriptsEnDirectorio();
+  // Obtener la lista de archivos en el directorio de scripts
+  const listaDeScripts = obtenerScriptsEnDirectorio();
 
-    // Construir el comando para ejecutar SikuliX con los scripts
-    
-    const scriptPaths = listaDeScripts.map(script => path.join(sikuliScriptsFolder, script));
-    const scriptPathsWithPrefix = scriptPaths.map(scriptPath => `./${scriptPath}`);
-    const command = `java -jar ${sikuliJarPath} -r ${scriptPathsWithPrefix.join(' ')}`;
+  // Construir el comando para ejecutar SikuliX con los scripts
+  const scriptPaths = listaDeScripts.map(script => path.join(sikuliScriptsFolder, script));
+  const scriptPathsWithPrefix = scriptPaths.map(scriptPath => `./${scriptPath}`);
+  const command = `java -jar ${sikuliJarPath} -r ${scriptPathsWithPrefix.join(' ')}`;
 
+  // Ejecutar el comando
+  return new Promise((resolve, reject) => {
     // Ejecutar el comando
-    return new Promise((resolve, reject) => {
-      // Ejecutar el comando
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error al ejecutar SikuliX: ${error.message}`);
-          reject(error);
-        } else {
-          console.log(`SikuliX ejecutado exitosamente. Salida: ${stdout}`);
-          resolve();
-        }
-      });
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error al ejecutar SikuliX: ${error.message}`);
+        reject(error);
+      } else {
+        console.log(`SikuliX ejecutado exitosamente. Salida: ${stdout}`);
+        resolve();
+      }
     });
-  }
-  
+  })
+;;
+}
 
-// Función para descargar el archivo JAR si no existe
-// Función para descargar el archivo JAR si no existe
+
 // Función para descargar el archivo JAR si no existe
 async function descargarSikuliJar() {
-  // Devuelve una Promesa que se resolverá después de la descarga
   return new Promise(async (resolve) => {
-    // Crear una interfaz de lectura
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
     });
 
-    // Pregunta al usuario
+    const javaVersion = await obtenerVersionJava();
+
+    if (!javaVersion) {
+      console.error('Java no está instalado. Por favor, instala Java antes de continuar.');
+      process.exit();
+    }
+
+    // Si el archivo SikuliX JAR ya existe, resuelve la promesa inmediatamente
+    if (fs.existsSync(sikuliJarPath)) {
+      rl.close();
+      resolve();
+      return;
+    }
+
     rl.question('Presiona "Enter" para aceptar o "Escape" para cancelar...', async function (answer) {
       if (answer.trim().toLowerCase() === '') {
-        console.log('Descarga aceptada.');
-
-        // Verificar si Java está instalado
-        const javaVersion = await obtenerVersionJava();
-        if (!javaVersion) {
-          console.error('Java no está instalado. Por favor, instala Java antes de continuar.');
+        console.log('Descarga aceptada. por inconsistencias con el servidor se realizan 40 intentos.');
+    
+        const maxRetries = 40;
+        let retries = 0;
+    
+        while (retries < maxRetries) {
+          try {
+            console.log(`Intento ${retries + 1}: Descargando SikuliX JAR...`);
+            const response = await fetch(sikuliJarUrl);
+    
+            if (!response.ok) {
+              throw new Error(`Failed to download SikuliX JAR. Status: ${response.status}`);
+            }
+    
+            await fs.outputFile(sikuliJarPath, await response.buffer());
+    
+            console.log('SikuliX JAR descargado con éxito.');
+            break; // Descarga exitosa, salir del bucle de reintento
+          } catch (error) {
+            console.error(`Error al descargar SikuliX JAR: ${error.message}`);
+            retries++;
+          }
+        }
+    
+        if (retries === maxRetries) {
+          console.error('Se excedió el número máximo de reintentos. La descarga ha fallado.');
           process.exit();
+
+        } else {
+          rl.close();
+          resolve();
         }
-
-        // Descargar SikuliX JAR
-        if (!fs.existsSync(sikuliJarPath)) {
-          console.log('Descargando SikuliX JAR...');
-          // Ajusta la ruta de descarga según sea necesario
-          await download(sikuliJarUrl, '/module_sikuli/');
-          console.log('SikuliX JAR descargado con éxito.');
-        }
-
-        // Cerrar la interfaz de lectura
-        rl.close();
-
-        resolve(); // Resolver la Promesa después de la descarga
       } else {
         console.log('Descarga cancelada.');
+        rl.close();
         process.exit();
       }
     });
   });
 }
 
+
 function obtenerScriptsEnDirectorio() {
   const archivosEnDirectorio = fs.readdirSync(sikuliScriptsFolder);
   return archivosEnDirectorio.filter(archivo => archivo.endsWith('.skl'));
 }
+
+
+
 
 async function obtenerVersionJava() {
   return new Promise((resolve, reject) => {
@@ -277,8 +302,7 @@ async function obtenerVersionJava() {
   });
 }
 
-// Llamar a la función principal para ejecutar SikuliX con múltiples scripts
-//ejecutarSikuliXConScripts();
+
 
 
 
